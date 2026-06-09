@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#6366f1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<link rel="manifest" href="/manifest.json"/>
+<title>Hydra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --indigo: #6366f1;
+  --indigo-light: #e0e7ff;
+  --indigo-mid: #a5b4fc;
+  --orange: #f97316;
+  --orange-light: #fff7ed;
+  --pink: #ec4899;
+  --pink-light: #fdf2f8;
+  --bg: #faf9ff;
+  --surface: #ffffff;
+  --border: rgba(99,102,241,0.12);
+  --text: #1e1b4b;
+  --muted: #6b7280;
+  --radius: 20px;
+  --radius-sm: 12px;
+  font-family: 'Nunito', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  background: var(--bg); color: var(--text);
+  min-height: 100dvh; display: flex; flex-direction: column;
+  max-width: 430px; margin: 0 auto; overflow-x: hidden;
+}
+
+/* screens */
+.screen { display: none; flex-direction: column; flex: 1; padding: 0 0 88px; gap: 14px; overflow-y: auto; }
+.screen.active { display: flex; }
+
+/* header */
+.header { padding: 56px 24px 0; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 22px; font-weight: 800; color: var(--indigo); letter-spacing: -0.5px; }
+.streak-chip {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--orange-light); border-radius: 20px;
+  padding: 5px 12px; border: 1px solid #fed7aa;
+}
+.streak-chip .fire { font-size: 16px; }
+.streak-chip span { font-size: 14px; font-weight: 700; color: var(--orange); }
+
+/* flame */
+.flame-section { display: flex; flex-direction: column; align-items: center; padding: 4px 0 4px; gap: 10px; }
+.flame-container { position: relative; width: 140px; height: 160px; cursor: pointer; user-select: none; }
+.flame-container svg { width: 100%; height: 100%; }
+.outfit-tag {
+  position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%);
+  background: var(--indigo-light); border: 1px solid var(--indigo-mid);
+  border-radius: 20px; font-size: 10px; color: var(--indigo);
+  font-weight: 700; padding: 3px 10px; white-space: nowrap;
+}
+.level-section { width: 200px; }
+.level-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 5px; }
+.level-bar { height: 6px; background: var(--indigo-light); border-radius: 99px; overflow: hidden; }
+.level-fill { height: 100%; background: linear-gradient(90deg, var(--indigo-mid), var(--indigo)); border-radius: 99px; transition: width 0.6s cubic-bezier(.34,1.56,.64,1); }
+
+/* log */
+.log-section { padding: 0 20px; display: flex; flex-direction: column; gap: 12px; }
+.amount-row { display: flex; gap: 8px; }
+.amt-btn {
+  flex: 1; background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; transition: all 0.15s; font-family: 'Nunito', sans-serif;
+}
+.amt-btn.active { background: var(--indigo-light); border-color: var(--indigo-mid); }
+.amt-btn .amt-icon { font-size: 20px; }
+.amt-btn .amt-label { font-size: 11px; font-weight: 700; color: var(--indigo); }
+
+/* FIX #5/#11: botón con estado loading */
+.log-btn {
+  background: var(--indigo); color: #fff; border: none;
+  border-radius: var(--radius); padding: 16px;
+  font-size: 16px; font-weight: 800; width: 100%;
+  cursor: pointer; font-family: 'Nunito', sans-serif;
+  transition: transform 0.12s, background 0.12s, opacity 0.12s;
+  letter-spacing: 0.01em; position: relative;
+}
+.log-btn:active:not(:disabled) { transform: scale(0.97); background: #4f46e5; }
+.log-btn:disabled { opacity: 0.6; cursor: default; transform: none; }
+.log-btn.loading::after {
+  content: ""; position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
+  width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: white; border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+.log-feedback {
+  text-align: center; font-size: 13px; font-weight: 600;
+  color: var(--indigo); min-height: 20px; transition: opacity 0.3s; opacity: 0;
+}
+.log-feedback.show { opacity: 1; }
+
+/* today pills */
+.today-log { padding: 0 20px; }
+.today-log h3 { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+.log-pills { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+.log-pill { background: var(--indigo-light); border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600; color: var(--indigo); }
+
+/* reward hint */
+.reward-hint {
+  margin: 0 20px; background: var(--pink-light); border: 1px solid #fbcfe8;
+  border-radius: var(--radius-sm); padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+}
+.reward-hint .rh-icon { font-size: 18px; }
+.reward-hint .rh-text { font-size: 13px; font-weight: 600; color: #9d174d; }
+
+/* tab bar */
+.tab-bar {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px;
+  background: rgba(255,255,255,0.92); backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  display: flex; padding: 8px 16px 20px; gap: 4px; z-index: 100;
+}
+.tab-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 6px 4px; border-radius: var(--radius-sm); cursor: pointer;
+  transition: background 0.15s; border: none; background: transparent;
+  font-family: 'Nunito', sans-serif;
+}
+.tab-item.active { background: var(--indigo-light); }
+.tab-item .tab-icon { font-size: 20px; }
+.tab-item .tab-label { font-size: 10px; font-weight: 700; color: var(--muted); }
+.tab-item.active .tab-label { color: var(--indigo); }
+
+/* rewards */
+.screen-header { padding: 56px 24px 0; display: flex; flex-direction: column; gap: 4px; }
+.screen-title { font-size: 20px; font-weight: 800; color: var(--text); }
+.screen-sub { font-size: 13px; color: var(--muted); font-weight: 500; }
+.rewards-list { padding: 0 20px; display: flex; flex-direction: column; gap: 10px; }
+.reward-card {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px; transition: all 0.2s;
+}
+.reward-card.unlocked { border-color: var(--indigo-mid); background: var(--indigo-light); }
+.reward-card.redeemed { opacity: 0.45; }
+.rw-icon { font-size: 24px; width: 36px; text-align: center; flex-shrink: 0; }
+.rw-info { flex: 1; min-width: 0; }
+.rw-name { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rw-sub { font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 1px; }
+.rw-btn {
+  background: var(--indigo); color: #fff; border: none;
+  border-radius: 10px; padding: 7px 14px; font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: 'Nunito', sans-serif; flex-shrink: 0;
+}
+.rw-locked-btn { background: #f3f4f6; color: #9ca3af; border: none; border-radius: 10px; padding: 7px 10px; font-size: 14px; cursor: default; flex-shrink: 0; }
+.rw-del-btn { background: none; border: none; cursor: pointer; font-size: 14px; color: #9ca3af; padding: 4px; flex-shrink: 0; }
+
+.add-reward-btn {
+  margin: 0 20px; width: calc(100% - 40px);
+  background: transparent; border: 2px dashed var(--indigo-mid);
+  border-radius: var(--radius-sm); padding: 12px;
+  font-size: 13px; font-weight: 700; color: var(--indigo);
+  cursor: pointer; font-family: 'Nunito', sans-serif;
+}
+
+/* FIX #9: modal backdrop click */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(30,27,75,0.45); z-index: 200;
+  align-items: flex-end; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface); border-radius: 24px 24px 0 0;
+  padding: 24px 24px 40px; width: 100%; max-width: 430px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.modal h2 { font-size: 18px; font-weight: 800; color: var(--text); }
+.modal input {
+  width: 100%; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  padding: 12px 14px; font-size: 14px; font-family: 'Nunito', sans-serif;
+  color: var(--text); background: var(--bg); outline: none;
+}
+.modal input:focus { border-color: var(--indigo); }
+.modal-row { display: flex; gap: 10px; }
+.modal-confirm {
+  flex: 1; background: var(--indigo); color: #fff; border: none;
+  border-radius: var(--radius-sm); padding: 13px;
+  font-size: 14px; font-weight: 800; cursor: pointer; font-family: 'Nunito', sans-serif;
+}
+.modal-cancel {
+  background: #f3f4f6; color: var(--muted); border: none;
+  border-radius: var(--radius-sm); padding: 13px 16px;
+  font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Nunito', sans-serif;
+}
+
+/* flame screen */
+.flame-preview-section { display: flex; flex-direction: column; align-items: center; padding: 8px 24px 4px; gap: 8px; }
+.outfit-level-text { font-size: 13px; color: var(--muted); font-weight: 600; }
+.outfits-grid { padding: 0 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.outfit-item {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  cursor: pointer; transition: all 0.15s;
+}
+.outfit-item.selected { border-color: var(--indigo); background: var(--indigo-light); }
+.outfit-item.locked-outfit { opacity: 0.4; cursor: default; }
+.outfit-item .outfit-emoji { font-size: 28px; }
+.outfit-name { font-size: 12px; font-weight: 700; color: var(--text); }
+.outfit-req { font-size: 10px; color: var(--muted); font-weight: 600; }
+
+/* history */
+.history-list { padding: 0 20px; display: flex; flex-direction: column; gap: 8px; }
+.history-day {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hd-date { font-size: 13px; font-weight: 700; color: var(--text); }
+.hd-amounts { font-size: 12px; color: var(--muted); font-weight: 500; }
+.hd-count { font-size: 18px; font-weight: 800; color: var(--indigo); }
+
+/* FIX #10: level-up celebration */
+.levelup-toast {
+  position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
+  background: var(--indigo); color: white; border-radius: 20px;
+  padding: 10px 20px; font-size: 14px; font-weight: 700;
+  z-index: 300; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+  white-space: nowrap;
+}
+.levelup-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* animations */
+@keyframes bounce {
+  0%,100% { transform: translateY(0); }
+  40%      { transform: translateY(-16px); }
+  70%      { transform: translateY(-7px); }
+}
+.flame-bounce { animation: bounce 0.55s ease; }
+
+@keyframes wiggle {
+  0%,100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-8deg); }
+  75%      { transform: rotate(8deg); }
+}
+.flame-levelup { animation: wiggle 0.2s ease 4; }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div class="screen active" id="screen-home">
+  <div class="header">
+    <h1>Hydra</h1>
+    <div class="streak-chip">
+      <span class="fire">🔥</span>
+      <span id="streak-num">0</span>
+    </div>
+  </div>
+
+  <div class="flame-section">
+    <div class="flame-container" id="flame-container" onclick="bounceFire()"></div>
+    <div class="level-section">
+      <div class="level-row">
+        <span id="level-label">nivel 1</span>
+        <span id="level-next">nivel 2</span>
+      </div>
+      <div class="level-bar"><div class="level-fill" id="level-fill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="log-section">
+    <div class="amount-row" id="amount-row">
+      <button class="amt-btn" data-amount="trago" onclick="selectAmount(this)">
+        <span class="amt-icon">💧</span><span class="amt-label">trago</span>
+      </button>
+      <button class="amt-btn active" data-amount="vaso" onclick="selectAmount(this)">
+        <span class="amt-icon">🥛</span><span class="amt-label">vaso</span>
+      </button>
+      <button class="amt-btn" data-amount="botella" onclick="selectAmount(this)">
+        <span class="amt-icon">🫙</span><span class="amt-label">botella</span>
+      </button>
+    </div>
+    <button class="log-btn" id="log-btn" onclick="logWater()">Tomé agua</button>
+    <div class="log-feedback" id="log-feedback"></div>
+  </div>
+
+  <div class="today-log">
+    <h3>Hoy</h3>
+    <div class="log-pills" id="today-pills"></div>
+  </div>
+
+  <div class="reward-hint" onclick="goTab('rewards')" id="reward-hint" style="display:none">
+    <span class="rh-icon">🎁</span>
+    <div class="rh-text" id="reward-hint-text"></div>
+  </div>
+</div>
+
+<!-- REWARDS -->
+<div class="screen" id="screen-rewards">
+  <div class="screen-header">
+    <span class="screen-title">Premios</span>
+    <span class="screen-sub" id="rewards-sub">Cada 10 días de racha</span>
+  </div>
+  <div class="rewards-list" id="rewards-list"></div>
+  <button class="add-reward-btn" onclick="openAddModal()">+ Agregar premio personalizado</button>
+</div>
+
+<!-- FLAME -->
+<div class="screen" id="screen-flame">
+  <div class="screen-header">
+    <span class="screen-title">Tu llama</span>
+    <span class="screen-sub" id="flame-sub">Sube de racha para desbloquear outfits</span>
+  </div>
+  <div class="flame-preview-section">
+    <div id="flame-preview"></div>
+    <span class="outfit-level-text" id="outfit-level-text"></span>
+  </div>
+  <div class="outfits-grid" id="outfits-grid"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="screen" id="screen-history">
+  <div class="screen-header">
+    <span class="screen-title">Historial</span>
+    <span class="screen-sub">Últimos 30 días</span>
+  </div>
+  <div class="history-list" id="history-list"></div>
+</div>
+
+<!-- TAB BAR -->
+<nav class="tab-bar">
+  <button class="tab-item active" data-screen="home" onclick="goTab('home')">
+    <span class="tab-icon">💧</span><span class="tab-label">Inicio</span>
+  </button>
+  <button class="tab-item" data-screen="rewards" onclick="goTab('rewards')">
+    <span class="tab-icon">🎁</span><span class="tab-label">Premios</span>
+  </button>
+  <button class="tab-item" data-screen="flame" onclick="goTab('flame')">
+    <span class="tab-icon">🔥</span><span class="tab-label">Llama</span>
+  </button>
+  <button class="tab-item" data-screen="history" onclick="goTab('history')">
+    <span class="tab-icon">📅</span><span class="tab-label">Historial</span>
+  </button>
+</nav>
+
+<!-- MODAL ADD REWARD -->
+<!-- FIX #9: backdrop click cierra el modal -->
+<div class="modal-overlay" id="add-modal" onclick="handleModalOverlayClick(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h2>Nuevo premio</h2>
+    <input type="text" id="modal-icon" placeholder="Emoji (ej: 🍦)" maxlength="4"/>
+    <input type="text" id="modal-name" placeholder="Nombre del premio" maxlength="60"/>
+    <input type="number" id="modal-days" placeholder="Disponible a partir del día N" min="1" max="365"/>
+    <div class="modal-row">
+      <button class="modal-cancel" onclick="closeAddModal()">Cancelar</button>
+      <button class="modal-confirm" onclick="saveReward()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- FIX #10: level-up toast -->
+<div class="levelup-toast" id="levelup-toast"></div>
+
+<script>
+// ── state ─────────────────────────────────────────────────────────────────────
+let state = { streak: 0, level: 1, today_logs: [], outfit: "classic" };
+let selectedAmount = "vaso";
+let isLogging = false; // FIX #5: debounce
+
+// ── flame SVG factory ─────────────────────────────────────────────────────────
+const OUTFITS = {
+  classic:  { label: "Sombrero",   emoji: "🎩", req: 0,
+    extra: c => `<rect x="40" y="30" width="50" height="7" rx="3.5" fill="${c}"/>
+                 <rect x="49" y="14" width="32" height="17" rx="5" fill="${c}"/>` },
+  crown:    { label: "Corona",     emoji: "👑", req: 14,
+    extra: () => `<polygon points="65,28 52,14 65,22 78,14 78,28" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"/>
+                  <circle cx="52" cy="14" r="2.5" fill="#fbbf24"/>
+                  <circle cx="65" cy="10" r="3" fill="#fbbf24"/>
+                  <circle cx="78" cy="14" r="2.5" fill="#fbbf24"/>` },
+  flowers:  { label: "Flores",     emoji: "🌸", req: 21,
+    extra: () => `<circle cx="52" cy="24" r="6" fill="#f9a8d4"/><circle cx="52" cy="24" r="3" fill="#fbcfe8"/>
+                  <circle cx="65" cy="20" r="6" fill="#f9a8d4"/><circle cx="65" cy="20" r="3" fill="#fbcfe8"/>
+                  <circle cx="78" cy="24" r="6" fill="#f9a8d4"/><circle cx="78" cy="24" r="3" fill="#fbcfe8"/>` },
+  rainbow:  { label: "Arcoíris",   emoji: "🌈", req: 30,
+    extra: () => `<path d="M44 34 Q65 8 86 34" stroke="#ef4444" stroke-width="4" fill="none" stroke-linecap="round"/>
+                  <path d="M47 38 Q65 14 83 38" stroke="#f97316" stroke-width="4" fill="none" stroke-linecap="round"/>
+                  <path d="M50 42 Q65 20 80 42" stroke="#facc15" stroke-width="4" fill="none" stroke-linecap="round"/>
+                  <path d="M53 46 Q65 26 77 46" stroke="#4ade80" stroke-width="4" fill="none" stroke-linecap="round"/>
+                  <path d="M56 50 Q65 33 74 50" stroke="#60a5fa" stroke-width="4" fill="none" stroke-linecap="round"/>` },
+  space:    { label: "Astronauta", emoji: "🚀", req: 45,
+    extra: () => `<ellipse cx="65" cy="22" rx="20" ry="14" fill="#e0e7ff" stroke="#818cf8" stroke-width="2"/>
+                  <ellipse cx="65" cy="22" rx="11" ry="8" fill="#c7d2fe" opacity="0.8"/>
+                  <circle cx="58" cy="18" r="2.5" fill="white" opacity="0.9"/>` },
+  angel:    { label: "Ángel",      emoji: "😇", req: 60,
+    extra: () => `<ellipse cx="65" cy="13" rx="18" ry="5" fill="none" stroke="#fde68a" stroke-width="3.5"/>
+                  <path d="M36 50 Q24 32 36 20 Q50 38 40 52" fill="#fef3c7" opacity="0.85"/>
+                  <path d="M94 50 Q106 32 94 20 Q80 38 90 52" fill="#fef3c7" opacity="0.85"/>` },
+};
+
+function flameSVG(outfit, w = 140, h = 160) {
+  const o = OUTFITS[outfit] || OUTFITS.classic;
+  const hatColor = "#6366f1";
+  return `<svg viewBox="0 0 130 150" fill="none" xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
+    <ellipse cx="65" cy="118" rx="32" ry="24" fill="#fb923c"/>
+    <ellipse cx="65" cy="80" rx="28" ry="36" fill="#fb923c"/>
+    <ellipse cx="65" cy="76" rx="17" ry="24" fill="#fde68a"/>
+    <ellipse cx="65" cy="80" rx="10" ry="16" fill="#fef9c3"/>
+    <path d="M65 30 Q54 54 49 50 Q57 42 65 30Z" fill="#fb923c"/>
+    <path d="M65 30 Q76 54 81 50 Q73 42 65 30Z" fill="#fb923c"/>
+    <path d="M65 26 Q62 44 59 41 Q62 35 65 26Z" fill="#fde68a"/>
+    <circle cx="55" cy="72" r="5.5" fill="white"/>
+    <circle cx="75" cy="72" r="5.5" fill="white"/>
+    <circle cx="56" cy="73" r="3" fill="#1e1b4b"/>
+    <circle cx="76" cy="73" r="3" fill="#1e1b4b"/>
+    <circle cx="57" cy="72" r="1.2" fill="white"/>
+    <circle cx="77" cy="72" r="1.2" fill="white"/>
+    <path d="M57 83 Q65 90 73 83" stroke="#c2410c" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <ellipse cx="47" cy="80" rx="6" ry="4" fill="#fca5a5" opacity="0.5"/>
+    <ellipse cx="83" cy="80" rx="6" ry="4" fill="#fca5a5" opacity="0.5"/>
+    <path d="M37 100 Q21 87 27 73" stroke="#fb923c" stroke-width="8" stroke-linecap="round" fill="none"/>
+    <path d="M93 100 Q109 87 103 73" stroke="#fb923c" stroke-width="8" stroke-linecap="round" fill="none"/>
+    <ellipse cx="53" cy="140" rx="13" ry="10" fill="#f97316"/>
+    <ellipse cx="77" cy="140" rx="13" ry="10" fill="#f97316"/>
+    ${o.extra(hatColor)}
+  </svg>`;
+}
+
+// ── level math ────────────────────────────────────────────────────────────────
+const LEVELS = [
+  { level:1, min:0,  max:3,   label:"nivel 1" },
+  { level:2, min:3,  max:7,   label:"nivel 2" },
+  { level:3, min:7,  max:14,  label:"nivel 3" },
+  { level:4, min:14, max:21,  label:"nivel 4" },
+  { level:5, min:21, max:30,  label:"nivel 5" },
+  { level:6, min:30, max:9999,label:"nivel 6" },
+];
+function levelProgress(streak) {
+  const l = LEVELS.find(x => streak < x.max) || LEVELS[LEVELS.length - 1];
+  const pct = l.max === 9999 ? 100 : Math.round((streak - l.min) / (l.max - l.min) * 100);
+  const next = LEVELS.find(x => x.level === l.level + 1);
+  return { ...l, pct, nextLabel: next ? next.label : "máximo 🔥" };
+}
+
+// ── render ────────────────────────────────────────────────────────────────────
+function renderFlame() {
+  const c = document.getElementById("flame-container");
+  if (!c) return;
+  const o = OUTFITS[state.outfit] || OUTFITS.classic;
+  c.innerHTML = flameSVG(state.outfit, 140, 160) +
+    `<div class="outfit-tag">${o.emoji} ${o.label}</div>`;
+}
+
+function bounceFire() {
+  const c = document.getElementById("flame-container");
+  c.classList.remove("flame-bounce", "flame-levelup");
+  void c.offsetWidth;
+  c.classList.add("flame-bounce");
+  setTimeout(() => c.classList.remove("flame-bounce"), 600);
+}
+
+function updateHomeUI() {
+  document.getElementById("streak-num").textContent = state.streak;
+  const lp = levelProgress(state.streak);
+  document.getElementById("level-label").textContent = lp.label;
+  document.getElementById("level-next").textContent  = lp.nextLabel;
+  document.getElementById("level-fill").style.width  = lp.pct + "%";
+  const pills = document.getElementById("today-pills");
+  if (state.today_logs.length === 0) {
+    pills.innerHTML = `<span style="font-size:12px;color:var(--muted);font-weight:500">Sin registros hoy</span>`;
+  } else {
+    pills.innerHTML = "";
+    state.today_logs.forEach(a => {
+      const s = document.createElement("span");
+      s.className = "log-pill";
+      s.textContent = a; // FIX #8: textContent en vez de innerHTML
+      pills.appendChild(s);
+    });
+  }
+}
+
+// FIX #8: función segura para crear reward cards sin XSS
+function createRewardCard(r, streak) {
+  const card = document.createElement("div");
+  card.className = "reward-card" +
+    (r.unlocked && !r.redeemed ? " unlocked" : "") +
+    (r.redeemed ? " redeemed" : "");
+
+  const icon = document.createElement("span");
+  icon.className = "rw-icon";
+  icon.textContent = r.icon; // textContent = seguro
+
+  const info = document.createElement("div");
+  info.className = "rw-info";
+  const name = document.createElement("div");
+  name.className = "rw-name";
+  name.textContent = r.name; // textContent = seguro
+  const sub = document.createElement("div");
+  sub.className = "rw-sub";
+  const daysLeft = r.unlocked ? "" : `faltan ${r.day_required - streak} días · `;
+  sub.textContent = r.redeemed ? "canjeado" : `${daysLeft}día ${r.day_required}`;
+  info.append(name, sub);
+
+  card.append(icon, info);
+
+  if (r.custom && !r.redeemed) {
+    const del = document.createElement("button");
+    del.className = "rw-del-btn";
+    del.textContent = "✕";
+    del.onclick = () => deleteReward(r.id);
+    card.appendChild(del);
+  }
+
+  const btn = document.createElement("button");
+  if (r.redeemed) {
+    btn.className = "rw-locked-btn";
+    btn.textContent = "✓";
+    btn.disabled = true;
+  } else if (r.unlocked) {
+    btn.className = "rw-btn";
+    btn.textContent = "Canjear";
+    btn.onclick = () => redeemReward(r.id);
+  } else {
+    btn.className = "rw-locked-btn";
+    btn.textContent = "🔒";
+    btn.disabled = true;
+  }
+  card.appendChild(btn);
+  return card;
+}
+
+function updateRewardsUI(data) {
+  const { streak, rewards } = data;
+  document.getElementById("rewards-sub").textContent = `Racha actual: ${streak} días`;
+  const list = document.getElementById("rewards-list");
+  list.innerHTML = "";
+  rewards.forEach(r => list.appendChild(createRewardCard(r, streak)));
+
+  // reward hint en home
+  const available = rewards.filter(r => r.unlocked && !r.redeemed);
+  const hint = document.getElementById("reward-hint");
+  const hintText = document.getElementById("reward-hint-text");
+  if (available.length > 0) {
+    hint.style.display = "flex";
+    hintText.textContent = `Tienes ${available.length} premio${available.length > 1 ? "s" : ""} disponible${available.length > 1 ? "s" : ""}`;
+  } else {
+    const next = rewards.find(r => !r.unlocked && !r.redeemed);
+    if (next) {
+      hint.style.display = "flex";
+      const diff = next.day_required - streak;
+      hintText.textContent = `En ${diff} día${diff !== 1 ? "s" : ""} desbloqueas: ${next.icon} ${next.name}`;
+    } else {
+      hint.style.display = "none";
+    }
+  }
+}
+
+function updateFlameUI() {
+  const preview = document.getElementById("flame-preview");
+  if (preview) preview.innerHTML = flameSVG(state.outfit, 100, 115);
+  document.getElementById("outfit-level-text").textContent =
+    `Nivel ${levelProgress(state.streak).level} · ${state.streak} días de racha`;
+  const grid = document.getElementById("outfits-grid");
+  grid.innerHTML = "";
+  Object.entries(OUTFITS).forEach(([key, o]) => {
+    const unlocked = state.streak >= o.req;
+    const div = document.createElement("div");
+    div.className = "outfit-item" +
+      (state.outfit === key ? " selected" : "") +
+      (!unlocked ? " locked-outfit" : "");
+    const em = document.createElement("span");
+    em.className = "outfit-emoji"; em.textContent = o.emoji;
+    const nm = document.createElement("span");
+    nm.className = "outfit-name"; nm.textContent = o.label;
+    const rq = document.createElement("span");
+    rq.className = "outfit-req";
+    rq.textContent = unlocked ? (state.outfit === key ? "usando" : "disponible") : `🔒 día ${o.req}`;
+    div.append(em, nm, rq);
+    if (unlocked) div.onclick = () => setOutfit(key);
+    grid.appendChild(div);
+  });
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function fetchStatus() {
+  try {
+    const res = await fetch("/api/status");
+    if (!res.ok) return;
+    const d = await res.json();
+    state = { ...state, ...d };
+    renderFlame();
+    updateHomeUI();
+  } catch(e) { console.error("fetchStatus:", e); }
+}
+
+async function fetchRewards() {
+  try {
+    const res = await fetch("/api/rewards");
+    if (!res.ok) return;
+    updateRewardsUI(await res.json());
+  } catch(e) { console.error("fetchRewards:", e); }
+}
+
+async function fetchHistory() {
+  try {
+    const res = await fetch("/api/history");
+    if (!res.ok) return;
+    const d = await res.json();
+    const list = document.getElementById("history-list");
+    list.innerHTML = "";
+    if (!d.history.length) {
+      const p = document.createElement("p");
+      p.style.cssText = "font-size:14px;color:var(--muted);padding:0 4px";
+      p.textContent = "Sin registros aún.";
+      list.appendChild(p);
+      return;
+    }
+    d.history.forEach(row => {
+      const div = document.createElement("div");
+      div.className = "history-day";
+      const amounts = row.amounts ? row.amounts.split(",") : [];
+      const counts = {};
+      amounts.forEach(a => counts[a] = (counts[a] || 0) + 1);
+      const PLURAL = { trago: "tragos", vaso: "vasos", botella: "botellas" };
+      const summary = Object.entries(counts)
+        .map(([a, n]) => `${n} ${n === 1 ? a : (PLURAL[a] || a + "s")}`)
+        .join(", ");
+      const left = document.createElement("div");
+      const dateEl = document.createElement("div");
+      dateEl.className = "hd-date";
+      dateEl.textContent = formatDate(row.d);
+      const amtEl = document.createElement("div");
+      amtEl.className = "hd-amounts";
+      amtEl.textContent = summary;
+      left.append(dateEl, amtEl);
+      const count = document.createElement("div");
+      count.className = "hd-count";
+      count.textContent = amounts.length;
+      div.append(left, count);
+      list.appendChild(div);
+    });
+  } catch(e) { console.error("fetchHistory:", e); }
+}
+
+function formatDate(str) {
+  const [, m, d] = str.split("-");
+  const months = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  return `${parseInt(d)} ${months[parseInt(m) - 1]}`;
+}
+
+// FIX #5: logWater con debounce (isLogging flag) + FIX #10: level-up detection
+async function logWater() {
+  if (isLogging) return;
+  isLogging = true;
+  const btn = document.getElementById("log-btn");
+  btn.disabled = true;
+  btn.classList.add("loading");
+
+  const prevLevel = levelProgress(state.streak).level;
+
+  try {
+    const res = await fetch("/api/log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: selectedAmount })
+    });
+    if (!res.ok) throw new Error("log failed");
+    const d = await res.json();
+
+    const newLevel = levelProgress(d.streak).level;
+    state.streak = d.streak;
+    state.level  = d.level;
+    state.today_logs.unshift(selectedAmount);
+
+    bounceFire();
+    renderFlame();
+    updateHomeUI();
+    fetchRewards();
+
+    // FIX #10: si subió de nivel, celebrar
+    if (newLevel > prevLevel) {
+      showLevelUpToast(newLevel);
+    }
+
+    const msgs = [
+      "Muy bien, sigue así",
+      "Tu llama te lo agradece",
+      "Hidratación en progreso",
+      "Un paso a la vez",
+      "Racha en marcha",
+    ];
+    const fb = document.getElementById("log-feedback");
+    fb.textContent = msgs[Math.floor(Math.random() * msgs.length)];
+    fb.classList.add("show");
+    setTimeout(() => fb.classList.remove("show"), 2000);
+
+  } catch(e) {
+    console.error("logWater:", e);
+  } finally {
+    // FIX #5: re-habilitar siempre, incluso si hay error
+    isLogging = false;
+    btn.disabled = false;
+    btn.classList.remove("loading");
+  }
+}
+
+// FIX #10: toast de nivel
+function showLevelUpToast(level) {
+  const t = document.getElementById("levelup-toast");
+  t.textContent = `¡Subiste al nivel ${level}! 🔥`;
+  t.classList.add("show");
+  const c = document.getElementById("flame-container");
+  c.classList.remove("flame-bounce", "flame-levelup");
+  void c.offsetWidth;
+  c.classList.add("flame-levelup");
+  setTimeout(() => {
+    t.classList.remove("show");
+    c.classList.remove("flame-levelup");
+  }, 3000);
+}
+
+async function redeemReward(id) {
+  try {
+    const res = await fetch(`/api/rewards/${id}/redeem`, { method: "POST" });
+    if (res.ok) fetchRewards();
+  } catch(e) { console.error(e); }
+}
+
+async function deleteReward(id) {
+  try {
+    await fetch(`/api/rewards/${id}`, { method: "DELETE" });
+    fetchRewards();
+  } catch(e) { console.error(e); }
+}
+
+async function setOutfit(key) {
+  try {
+    const res = await fetch("/api/outfit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ outfit: key })
+    });
+    if (res.ok) {
+      state.outfit = key;
+      renderFlame();
+      updateFlameUI();
+    }
+  } catch(e) { console.error(e); }
+}
+
+async function saveReward() {
+  const icon = document.getElementById("modal-icon").value.trim() || "🎁";
+  const name = document.getElementById("modal-name").value.trim();
+  const days = parseInt(document.getElementById("modal-days").value);
+  if (!name || !days || days < 1) return;
+  try {
+    await fetch("/api/rewards", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, icon, day_required: days })
+    });
+    closeAddModal();
+    fetchRewards();
+  } catch(e) { console.error(e); }
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function selectAmount(btn) {
+  document.querySelectorAll(".amt-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  selectedAmount = btn.dataset.amount;
+}
+
+function goTab(name) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".tab-item").forEach(t => t.classList.remove("active"));
+  document.getElementById("screen-" + name).classList.add("active");
+  document.querySelector(`[data-screen="${name}"]`).classList.add("active");
+  if (name === "rewards") fetchRewards();
+  if (name === "flame")   updateFlameUI();
+  if (name === "history") fetchHistory();
+}
+
+function openAddModal() { document.getElementById("add-modal").classList.add("open"); }
+function closeAddModal() {
+  document.getElementById("add-modal").classList.remove("open");
+  ["modal-icon", "modal-name", "modal-days"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+}
+// FIX #9: click en backdrop cierra
+function handleModalOverlayClick(e) {
+  if (e.target === document.getElementById("add-modal")) closeAddModal();
+}
+
+// auto-log si viene de notificación con action "log"
+if (new URLSearchParams(location.search).get("log") === "1") {
+  history.replaceState({}, "", "/");
+  // pequeño delay para que cargue el estado primero
+  setTimeout(logWater, 800);
+}
+
+// ── notifications ─────────────────────────────────────────────────────────────
+async function setupNotifications() {
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "default") {
+    await Notification.requestPermission();
+  }
+  if (Notification.permission !== "granted") return;
+
+  const reg = await navigator.serviceWorker.ready;
+
+  // le decimos al SW que arranque su alarm interno
+  reg.active?.postMessage({ type: "SCHEDULE_ALARM" });
+
+  // Periodic Background Sync si disponible
+  if ("periodicSync" in reg) {
+    try {
+      const status = await navigator.permissions.query({ name: "periodic-background-sync" });
+      if (status.state === "granted") {
+        await reg.periodicSync.register("water-reminder", { minInterval: 60 * 60 * 1000 });
+      }
+    } catch(e) { /* no soportado, el alarm del SW cubre este caso */ }
+  }
+}
+
+// ── boot ──────────────────────────────────────────────────────────────────────
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js")
+    .then(() => setupNotifications())
+    .catch(e => console.error("SW:", e));
+}
+
+fetchStatus();
+fetchRewards();
+</script>
+</body>
+</html>
