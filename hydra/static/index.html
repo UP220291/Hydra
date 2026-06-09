@@ -317,7 +317,7 @@ body {
 <!-- FLAME -->
 <div class="screen" id="screen-flame">
   <div class="screen-header">
-    <span class="screen-title">Tu llama</span>
+    <span class="screen-title">Tu gota</span>
     <span class="screen-sub" id="flame-sub">Sube de racha para desbloquear outfits</span>
   </div>
   <div class="flame-preview-section">
@@ -345,7 +345,7 @@ body {
     <span class="tab-icon">🎁</span><span class="tab-label">Premios</span>
   </button>
   <button class="tab-item" data-screen="flame" onclick="goTab('flame')">
-    <span class="tab-icon">🔥</span><span class="tab-label">Llama</span>
+    <span class="tab-icon">🫧</span><span class="tab-label">Gota</span>
   </button>
   <button class="tab-item" data-screen="history" onclick="goTab('history')">
     <span class="tab-icon">📅</span><span class="tab-label">Historial</span>
@@ -376,61 +376,133 @@ let state = { streak: 0, level: 1, today_logs: [], outfit: "classic" };
 let selectedAmount = "vaso";
 let isLogging = false; // FIX #5: debounce
 
-// ── flame SVG factory ─────────────────────────────────────────────────────────
+// ── water drop SVG factory ────────────────────────────────────────────────────
 const OUTFITS = {
-  classic:  { label: "Sombrero",   emoji: "🎩", req: 0,
-    extra: c => `<rect x="40" y="30" width="50" height="7" rx="3.5" fill="${c}"/>
-                 <rect x="49" y="14" width="32" height="17" rx="5" fill="${c}"/>` },
-  crown:    { label: "Corona",     emoji: "👑", req: 14,
-    extra: () => `<polygon points="65,28 52,14 65,22 78,14 78,28" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"/>
-                  <circle cx="52" cy="14" r="2.5" fill="#fbbf24"/>
-                  <circle cx="65" cy="10" r="3" fill="#fbbf24"/>
-                  <circle cx="78" cy="14" r="2.5" fill="#fbbf24"/>` },
-  flowers:  { label: "Flores",     emoji: "🌸", req: 21,
-    extra: () => `<circle cx="52" cy="24" r="6" fill="#f9a8d4"/><circle cx="52" cy="24" r="3" fill="#fbcfe8"/>
-                  <circle cx="65" cy="20" r="6" fill="#f9a8d4"/><circle cx="65" cy="20" r="3" fill="#fbcfe8"/>
-                  <circle cx="78" cy="24" r="6" fill="#f9a8d4"/><circle cx="78" cy="24" r="3" fill="#fbcfe8"/>` },
-  rainbow:  { label: "Arcoíris",   emoji: "🌈", req: 30,
-    extra: () => `<path d="M44 34 Q65 8 86 34" stroke="#ef4444" stroke-width="4" fill="none" stroke-linecap="round"/>
-                  <path d="M47 38 Q65 14 83 38" stroke="#f97316" stroke-width="4" fill="none" stroke-linecap="round"/>
-                  <path d="M50 42 Q65 20 80 42" stroke="#facc15" stroke-width="4" fill="none" stroke-linecap="round"/>
-                  <path d="M53 46 Q65 26 77 46" stroke="#4ade80" stroke-width="4" fill="none" stroke-linecap="round"/>
-                  <path d="M56 50 Q65 33 74 50" stroke="#60a5fa" stroke-width="4" fill="none" stroke-linecap="round"/>` },
-  space:    { label: "Astronauta", emoji: "🚀", req: 45,
-    extra: () => `<ellipse cx="65" cy="22" rx="20" ry="14" fill="#e0e7ff" stroke="#818cf8" stroke-width="2"/>
-                  <ellipse cx="65" cy="22" rx="11" ry="8" fill="#c7d2fe" opacity="0.8"/>
-                  <circle cx="58" cy="18" r="2.5" fill="white" opacity="0.9"/>` },
-  angel:    { label: "Ángel",      emoji: "😇", req: 60,
-    extra: () => `<ellipse cx="65" cy="13" rx="18" ry="5" fill="none" stroke="#fde68a" stroke-width="3.5"/>
-                  <path d="M36 50 Q24 32 36 20 Q50 38 40 52" fill="#fef3c7" opacity="0.85"/>
-                  <path d="M94 50 Q106 32 94 20 Q80 38 90 52" fill="#fef3c7" opacity="0.85"/>` },
+  classic:  { label: "Gota bebé",   emoji: "💧", req: 0,
+    extra: () => `` },
+  crown:    { label: "Corona",       emoji: "👑", req: 14,
+    extra: () => `<polygon points="65,22 54,10 65,18 76,10 76,22" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"/>
+                  <circle cx="54" cy="10" r="2.5" fill="#fbbf24"/>
+                  <circle cx="65" cy="6"  r="3"   fill="#fbbf24"/>
+                  <circle cx="76" cy="10" r="2.5" fill="#fbbf24"/>` },
+  flowers:  { label: "Flores",       emoji: "🌸", req: 21,
+    extra: () => `<circle cx="50" cy="26" r="5" fill="#f9a8d4"/><circle cx="50" cy="26" r="2.5" fill="#fbcfe8"/>
+                  <circle cx="65" cy="21" r="5" fill="#f9a8d4"/><circle cx="65" cy="21" r="2.5" fill="#fbcfe8"/>
+                  <circle cx="80" cy="26" r="5" fill="#f9a8d4"/><circle cx="80" cy="26" r="2.5" fill="#fbcfe8"/>` },
+  rainbow:  { label: "Arcoíris",     emoji: "🌈", req: 30,
+    extra: () => `<path d="M42 34 Q65 8 88 34"  stroke="#ef4444" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+                  <path d="M45 39 Q65 15 85 39"  stroke="#f97316" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+                  <path d="M48 44 Q65 22 82 44"  stroke="#facc15" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+                  <path d="M51 49 Q65 29 79 49"  stroke="#4ade80" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+                  <path d="M54 54 Q65 36 76 54"  stroke="#60a5fa" stroke-width="3.5" fill="none" stroke-linecap="round"/>` },
+  space:    { label: "Astronauta",   emoji: "🚀", req: 45,
+    extra: () => `<ellipse cx="65" cy="24" rx="19" ry="13" fill="#e0e7ff" stroke="#818cf8" stroke-width="2"/>
+                  <ellipse cx="65" cy="24" rx="10" ry="7"  fill="#c7d2fe" opacity="0.8"/>
+                  <circle  cx="59" cy="20" r="2.5" fill="white" opacity="0.9"/>` },
+  angel:    { label: "Ángel",        emoji: "😇", req: 60,
+    extra: () => `<ellipse cx="65" cy="13" rx="17" ry="4.5" fill="none" stroke="#fde68a" stroke-width="3.5"/>
+                  <path d="M33 62 Q20 44 33 32 Q47 50 37 64" fill="#fef3c7" opacity="0.85"/>
+                  <path d="M97 62 Q110 44 97 32 Q83 50 93 64" fill="#fef3c7" opacity="0.85"/>` },
 };
 
+// Devuelve los colores de la gota según el nivel de racha
+function dropColors(streak) {
+  if (streak >= 30)  return { main: "#818cf8", mid: "#c7d2fe", light: "#e0e7ff", shine: "#ffffff", cheek: "#a5b4fc" }; // morado
+  if (streak >= 14)  return { main: "#38bdf8", mid: "#7dd3fc", light: "#e0f2fe", shine: "#ffffff", cheek: "#bae6fd" }; // celeste
+  if (streak >= 7)   return { main: "#22d3ee", mid: "#67e8f9", light: "#cffafe", shine: "#ffffff", cheek: "#a5f3fc" }; // cian
+  if (streak >= 3)   return { main: "#3b82f6", mid: "#93c5fd", light: "#dbeafe", shine: "#ffffff", cheek: "#bfdbfe" }; // azul medio
+                     return { main: "#60a5fa", mid: "#bfdbfe", light: "#eff6ff", shine: "#ffffff", cheek: "#dbeafe" }; // azul bebé
+}
+
+// Decide si mostrar brazos y piernas según el nivel
+function dropBodyParts(streak) {
+  const hasArms  = streak >= 3;
+  const hasLegs  = streak >= 7;
+  const hasTail  = streak < 3;   // cola de gota cuando es bebé
+  return { hasArms, hasLegs, hasTail };
+}
+
 function flameSVG(outfit, w = 140, h = 160) {
+  const o   = OUTFITS[outfit] || OUTFITS.classic;
+  const c   = dropColors(0); // colores fijos; se actualiza en render con el streak real
+  // Nota: flameSVG se llama sin streak; el color dinámico se pasa mediante renderFlame()
+  return buildDropSVG(outfit, w, h, 0);
+}
+
+function buildDropSVG(outfit, w, h, streak) {
   const o = OUTFITS[outfit] || OUTFITS.classic;
-  const hatColor = "#6366f1";
-  return `<svg viewBox="0 0 130 150" fill="none" xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
-    <ellipse cx="65" cy="118" rx="32" ry="24" fill="#fb923c"/>
-    <ellipse cx="65" cy="80" rx="28" ry="36" fill="#fb923c"/>
-    <ellipse cx="65" cy="76" rx="17" ry="24" fill="#fde68a"/>
-    <ellipse cx="65" cy="80" rx="10" ry="16" fill="#fef9c3"/>
-    <path d="M65 30 Q54 54 49 50 Q57 42 65 30Z" fill="#fb923c"/>
-    <path d="M65 30 Q76 54 81 50 Q73 42 65 30Z" fill="#fb923c"/>
-    <path d="M65 26 Q62 44 59 41 Q62 35 65 26Z" fill="#fde68a"/>
-    <circle cx="55" cy="72" r="5.5" fill="white"/>
-    <circle cx="75" cy="72" r="5.5" fill="white"/>
-    <circle cx="56" cy="73" r="3" fill="#1e1b4b"/>
-    <circle cx="76" cy="73" r="3" fill="#1e1b4b"/>
-    <circle cx="57" cy="72" r="1.2" fill="white"/>
-    <circle cx="77" cy="72" r="1.2" fill="white"/>
-    <path d="M57 83 Q65 90 73 83" stroke="#c2410c" stroke-width="2" stroke-linecap="round" fill="none"/>
-    <ellipse cx="47" cy="80" rx="6" ry="4" fill="#fca5a5" opacity="0.5"/>
-    <ellipse cx="83" cy="80" rx="6" ry="4" fill="#fca5a5" opacity="0.5"/>
-    <path d="M37 100 Q21 87 27 73" stroke="#fb923c" stroke-width="8" stroke-linecap="round" fill="none"/>
-    <path d="M93 100 Q109 87 103 73" stroke="#fb923c" stroke-width="8" stroke-linecap="round" fill="none"/>
-    <ellipse cx="53" cy="140" rx="13" ry="10" fill="#f97316"/>
-    <ellipse cx="77" cy="140" rx="13" ry="10" fill="#f97316"/>
-    ${o.extra(hatColor)}
+  const c = dropColors(streak);
+  const { hasArms, hasLegs, hasTail } = dropBodyParts(streak);
+
+  const arms = hasArms ? `
+    <!-- brazo izquierdo -->
+    <path d="M36 82 Q24 74 26 62" stroke="${c.main}" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <!-- brazo derecho -->
+    <path d="M94 82 Q106 74 104 62" stroke="${c.main}" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <!-- manita izquierda -->
+    <circle cx="26" cy="61" r="6" fill="${c.mid}"/>
+    <!-- manita derecha -->
+    <circle cx="104" cy="61" r="6" fill="${c.mid}"/>
+  ` : "";
+
+  const legs = hasLegs ? `
+    <!-- pierna izquierda -->
+    <path d="M52 128 Q46 138 44 148" stroke="${c.main}" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <!-- pierna derecha -->
+    <path d="M78 128 Q84 138 86 148" stroke="${c.main}" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <!-- pie izquierdo -->
+    <ellipse cx="42" cy="149" rx="10" ry="6" fill="${c.mid}"/>
+    <!-- pie derecho -->
+    <ellipse cx="88" cy="149" rx="10" ry="6" fill="${c.mid}"/>
+  ` : "";
+
+  const tail = hasTail ? `
+    <!-- colita de gota bebé -->
+    <path d="M65 28 Q65 14 65 10" stroke="${c.main}" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <circle cx="65" cy="9" r="5" fill="${c.mid}"/>
+  ` : "";
+
+  return `<svg viewBox="0 0 130 160" fill="none" xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
+    ${arms}
+    ${legs}
+
+    <!-- sombra suave -->
+    <ellipse cx="65" cy="148" rx="28" ry="7" fill="${c.main}" opacity="0.15"/>
+
+    <!-- cuerpo principal de la gota (forma de gota de agua) -->
+    <path d="M65 22 C65 22 32 60 32 90 C32 114 47 130 65 130 C83 130 98 114 98 90 C98 60 65 22 65 22Z" fill="${c.main}"/>
+
+    <!-- brillo interior -->
+    <path d="M65 30 C65 30 40 64 40 90 C40 110 51 124 65 124 C79 124 90 110 90 90 C90 64 65 30 65 30Z" fill="${c.mid}" opacity="0.5"/>
+
+    <!-- núcleo claro central -->
+    <ellipse cx="65" cy="92" rx="17" ry="22" fill="${c.light}" opacity="0.45"/>
+
+    <!-- brillo superior (reflejo de luz) -->
+    <ellipse cx="52" cy="58" rx="8" ry="11" fill="${c.shine}" opacity="0.35" transform="rotate(-18,52,58)"/>
+    <ellipse cx="49" cy="55" rx="4" ry="6"  fill="${c.shine}" opacity="0.55" transform="rotate(-18,49,55)"/>
+
+    ${tail}
+
+    <!-- ojos blancos -->
+    <circle cx="54" cy="86" r="9" fill="white"/>
+    <circle cx="76" cy="86" r="9" fill="white"/>
+    <!-- pupilas -->
+    <circle cx="56" cy="87" r="5" fill="#1e1b4b"/>
+    <circle cx="78" cy="87" r="5" fill="#1e1b4b"/>
+    <!-- brillo en pupilas -->
+    <circle cx="58" cy="85" r="1.8" fill="white"/>
+    <circle cx="80" cy="85" r="1.8" fill="white"/>
+
+    <!-- boca sonriente -->
+    <path d="M56 101 Q65 110 74 101" stroke="#1e1b4b" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+
+    <!-- cachetes rosados -->
+    <ellipse cx="44" cy="96" rx="7" ry="5" fill="${c.cheek}" opacity="0.55"/>
+    <ellipse cx="86" cy="96" rx="7" ry="5" fill="${c.cheek}" opacity="0.55"/>
+
+    <!-- outfit (sombrero, corona, etc) -->
+    ${o.extra()}
   </svg>`;
 }
 
@@ -455,7 +527,7 @@ function renderFlame() {
   const c = document.getElementById("flame-container");
   if (!c) return;
   const o = OUTFITS[state.outfit] || OUTFITS.classic;
-  c.innerHTML = flameSVG(state.outfit, 140, 160) +
+  c.innerHTML = buildDropSVG(state.outfit, 140, 160, state.streak) +
     `<div class="outfit-tag">${o.emoji} ${o.label}</div>`;
 }
 
@@ -565,7 +637,7 @@ function updateRewardsUI(data) {
 
 function updateFlameUI() {
   const preview = document.getElementById("flame-preview");
-  if (preview) preview.innerHTML = flameSVG(state.outfit, 100, 115);
+  if (preview) preview.innerHTML = buildDropSVG(state.outfit, 100, 115, state.streak);
   document.getElementById("outfit-level-text").textContent =
     `Nivel ${levelProgress(state.streak).level} · ${state.streak} días de racha`;
   const grid = document.getElementById("outfits-grid");
@@ -715,7 +787,7 @@ async function logWater() {
 // FIX #10: toast de nivel
 function showLevelUpToast(level) {
   const t = document.getElementById("levelup-toast");
-  t.textContent = `¡Subiste al nivel ${level}! 🔥`;
+  t.textContent = `¡Subiste al nivel ${level}! 💧`;
   t.classList.add("show");
   const c = document.getElementById("flame-container");
   c.classList.remove("flame-bounce", "flame-levelup");
